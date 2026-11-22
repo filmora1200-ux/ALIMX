@@ -1,0 +1,44 @@
+
+name: Windows Remote Machine
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: System Information
+        shell: pwsh
+        run: |
+          Write-Host "===== WINDOWS MACHINE ====="
+          Get-ComputerInfo |
+            Select-Object WindowsProductName, WindowsVersion
+
+          Write-Host "===== CPU ====="
+          Get-CimInstance Win32_Processor |
+            Select-Object Name, NumberOfLogicalProcessors
+
+          Write-Host "===== RAM ====="
+          $ram = Get-CimInstance Win32_ComputerSystem
+          Write-Host "RAM: $([math]::Round($ram.TotalPhysicalMemory / 1GB, 2)) GB"
+
+      - name: Check Remote Desktop Services
+        shell: pwsh
+        run: |
+          Get-Service -Name TermService,Tailscale,RustDesk `
+            -ErrorAction SilentlyContinue |
+            Format-Table Name, Status
+
+      - name: Finish
+        shell: pwsh
+        run: |
+          Write-Host "Windows workflow completed!"
